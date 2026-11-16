@@ -1,14 +1,12 @@
 plugins { id 'com.android.application' }
-
 android {
     namespace 'com.zhe.dvrtest'
     compileSdk 35
-
     defaultConfig {
         applicationId 'com.zhe.dvrtest'
         minSdk 28
         targetSdk 28
-        versionCode 4
-        versionName '0.4'
+        versionCode 5
+        versionName '0.4.1'
     }
 }
