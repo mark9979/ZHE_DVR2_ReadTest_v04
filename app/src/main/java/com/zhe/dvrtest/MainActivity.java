@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
         page.setBackgroundColor(0xFF101820);
 
         TextView title = new TextView(this);
-        title.setText("ZHE AUDIO PRO — اختبار DVR2 v0.4.1");
+        title.setText("ZHE AUDIO PRO — اختبار DVR2 v0.4.2");
         title.setTextColor(0xFFFFFFFF);
         title.setTextSize(25);
         title.setGravity(Gravity.CENTER_VERTICAL);
@@ -76,7 +76,6 @@ public class MainActivity extends Activity {
 
     private String performReadTest() {
         final String path = "/dev/dvb0.dvr2";
-        android.os.ParcelFileDescriptor pfd = null;
         byte[] buffer = new byte[1880];
         int total = 0, reads = 0, eagainCount = 0;
         String error = null;
@@ -93,13 +92,18 @@ public class MainActivity extends Activity {
                             total += n;
                             reads++;
                         } else {
-                            break; // EOF
+                            break;
                         }
                     } catch (ErrnoException e) {
-                        if (e.errno == OsConstants.EAGAIN || e.errno == OsConstants.EWOULDBLOCK) {
+                        // Android exposes EAGAIN here; do not reference EWOULDBLOCK,
+                        // which is not available in all Android API level stubs.
+                        if (e.errno == OsConstants.EAGAIN) {
                             eagainCount++;
                             try { Thread.sleep(20); }
-                            catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); break; }
+                            catch (InterruptedException interrupted) {
+                                Thread.currentThread().interrupt();
+                                break;
+                            }
                         } else {
                             throw e;
                         }
@@ -114,7 +118,7 @@ public class MainActivity extends Activity {
 
         long elapsedMs = (System.nanoTime() - start) / 1_000_000L;
         StringBuilder out = new StringBuilder();
-        out.append("نتيجة الاختبار v0.4.1\n");
+        out.append("نتيجة الاختبار v0.4.2\n");
         out.append("المسار: ").append(path).append('\n');
         out.append("المدة: ").append(elapsedMs).append(" ms\n");
         out.append("البيانات المقروءة: ").append(total).append(" / 1880 بايت\n");
@@ -125,7 +129,9 @@ public class MainActivity extends Activity {
             out.append("الخطأ: ").append(error).append('\n');
         } else if (total > 0) {
             int sync = 0;
-            for (int i = 0; i < total; i += 188) if ((buffer[i] & 0xFF) == 0x47) sync++;
+            for (int i = 0; i < total; i += 188) {
+                if ((buffer[i] & 0xFF) == 0x47) sync++;
+            }
             out.append("علامات تزامن MPEG-TS عند فواصل 188 بايت: ").append(sync).append('\n');
             out.append("التفسير: وصلت بيانات إلى المسار، لكن ذلك لا يثبت أنها صوت القناة.\n");
         } else {
